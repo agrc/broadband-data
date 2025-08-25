@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # * coding: utf8 *
 """
-Run the SKIDNAME script as a cloud function.
+Run the broadband-data skid as a cloud function.
 """
 
 import base64
