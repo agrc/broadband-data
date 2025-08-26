@@ -51,7 +51,7 @@ setup(
             "pytest-watch==4.*",
             "pytest>=7,<9",
             "ruff==0.*",
-            "functions-framework==3.8.*",
+            "functions-framework>=3.8,<3.10",
         ]
     },
     setup_requires=[
