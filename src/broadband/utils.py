@@ -27,7 +27,7 @@ def create_service_polygons_at_hex_level(
     )
     service_dissolved = categorize_service(service_dissolved.reset_index())
 
-    return service_dissolved
+    return service_dissolved.drop(columns=["OBJECTID", "hex_id", hex_id_field, "technology_name"])
 
 
 def classify_common_tech(service_data_df: pd.DataFrame) -> pd.DataFrame:

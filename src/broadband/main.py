@@ -149,12 +149,15 @@ class Skid:
         utah_service_data = self._extract_bdc_data()
 
         self.skid_logger.info("Loading hexes from AGOL...")
+        self.skid_logger.debug("Loading hex level 6...")
         level_6_hexes = (
             self.gis.content.get(config.HEXES_LEVEL_6_ITEMID).layers[0].query(where="1=1", out_fields="hex_id").sdf
         )
+        self.skid_logger.debug("Loading hex level 7...")
         level_7_hexes = (
             self.gis.content.get(config.HEXES_LEVEL_7_ITEMID).layers[0].query(where="1=1", out_fields="hex_id").sdf
         )
+        self.skid_logger.debug("Loading hex level 8...")
         level_8_hexes = (
             self.gis.content.get(config.HEXES_LEVEL_8_ITEMID).layers[0].query(where="1=1", out_fields="hex_id").sdf
         )
@@ -175,7 +178,14 @@ class Skid:
 
         #: The service records service has both a table and a layer
         max_service_count = self._update_agol(max_service_table, config.SERVICE_RECORDS_ITEMID, "table", 0)
-        max_service_hex_count = self._update_agol(max_service_hexes, config.SERVICE_RECORDS_ITEMID, "layer", 0)
+        max_service_hex_deleted_count, max_service_hex_added_count = self._agol_delete_and_load(
+            max_service_hexes, config.SERVICE_RECORDS_ITEMID, 0
+        )
+        self.skid_logger.debug(
+            "Deleted %s and added %s features to service hexes layer",
+            max_service_hex_deleted_count,
+            max_service_hex_added_count,
+        )
 
         end = datetime.now()
 
@@ -193,7 +203,7 @@ class Skid:
             f"Service areas at hex level 7: {service_level_7_count} features",
             f"Service areas at hex level 8: {service_level_8_count} features",
             f"Service record table: {max_service_count} records",
-            f"Hexes for service records: {max_service_hex_count} features",
+            f"Hexes for service records: {max_service_hex_added_count} features",
         ]
 
         summary_message.message = "\n".join(summary_rows)
@@ -213,8 +223,11 @@ class Skid:
             "hash_value": self.secrets.BDC_HASH,
         }
 
+        bdc_session = requests.Session()
+        bdc_session.headers.update(base_headers)
+
         #: Get the list of available dates
-        dates_response = requests.request("GET", f"{base_url}/listAsOfDates", headers=base_headers)
+        dates_response = bdc_session.get(f"{base_url}/listAsOfDates")
         response_list = dates_response.json()["data"]
         available_dates = [entry["as_of_date"] for entry in response_list if entry["data_type"] == "availability"]
         available_dates.sort(reverse=True)
@@ -224,20 +237,20 @@ class Skid:
             "category": "State",
             "technology_type": "Fixed Broadband",  #: only doing fixed, not worried about mobile data/voice
         }
-        download_list_response = requests.request(
-            "GET",
+        download_list_response = bdc_session.get(
             f"{base_url}/downloads/listAvailabilityData/{available_dates[0]}",
-            headers=base_headers,
             params=params,
         )
         available_files_df = pd.DataFrame.from_records(download_list_response.json()["data"])
         utah_files = available_files_df[(available_files_df["state_name"] == "Utah")]
 
         #: Use the file list to extract Utah provider data into a single dataframe
-        all_data_df = self._download_and_concat_provider_files(utah_files, base_url, base_headers)
+        all_data_df = self._download_and_concat_provider_files(utah_files, bdc_session, base_url)
 
         #: Add h3, common tech, and category columns
+        self.skid_logger.debug("Calculating H3 res 6...")
         all_data_df["h3_res6_id"] = all_data_df.apply(lambda row: utils.h3_to_parent(row["h3_res8_id"], 6), axis=1)
+        self.skid_logger.debug("Calculating H3 res 7...")
         all_data_df["h3_res7_id"] = all_data_df.apply(lambda row: utils.h3_to_parent(row["h3_res8_id"], 7), axis=1)
 
         all_data_df = utils.classify_common_tech(all_data_df)
@@ -246,7 +259,7 @@ class Skid:
         return all_data_df
 
     def _download_and_concat_provider_files(
-        self, files_df: pd.DataFrame, base_url: str, base_headers: dict[str, str]
+        self, files_df: pd.DataFrame, session: requests.Session, base_url: str
     ) -> pd.DataFrame:
         #: Download, extract, load to dataframe, and concat all the provider data for utah
 
@@ -262,9 +275,7 @@ class Skid:
 
             technology, file_id = file_data
             self.skid_logger.debug("Downloading file_id: %s (%s)", file_id, technology)
-            download_response = requests.request(
-                "GET", f"{base_url}/downloads/downloadFile/availability/{file_id}", headers=base_headers
-            )
+            download_response = session.get(f"{base_url}/downloads/downloadFile/availability/{file_id}", timeout=3)
 
             if download_response.status_code != 200:
                 raise ValueError(
@@ -297,6 +308,20 @@ class Skid:
         records_loaded = loader.truncate_and_load(data)
 
         return records_loaded
+
+    def _agol_delete_and_load(
+        self,
+        data: pd.DataFrame | gpd.GeoDataFrame,
+        layer_itemid: str,
+        index: int,
+    ) -> tuple[int, int]:
+        live_data = self.gis.content.get(layer_itemid).layers[index].query(where="1=1", out_fields="*").sdf
+        oids = live_data["OBJECTID"].astype(int).tolist()
+        loader = load.ServiceUpdater(self.gis, layer_itemid, "layer", index, self.tempdir_path)
+        records_deleted = loader.remove(oids)
+        records_loaded = loader.add(data)
+
+        return records_deleted, records_loaded
 
 
 def entry():
