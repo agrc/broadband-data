@@ -7,7 +7,7 @@ import socket
 
 SKID_NAME = "broadband-data"
 
-AGOL_ORG = "https://utah.maps.arcgis.com"
+AGOL_ORG = "https://utahbroadbandctr.maps.arcgis.com"
 SENDGRID_SETTINGS = {  #: Settings for SendGridHandler
     "from_address": "noreply@utah.gov",
     "to_addresses": "jdadams@utah.gov",

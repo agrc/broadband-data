@@ -59,7 +59,7 @@ setup(
     ],
     entry_points={
         "console_scripts": [
-            "broadband-data = broadband.main:function",
+            "broadband-data = broadband.main:entry",
         ]
     },
 )
