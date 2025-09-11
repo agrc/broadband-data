@@ -23,11 +23,17 @@ def create_service_polygons_at_hex_level(
     service_at_level = service_by_hex_level(service_records, hex_id_field, hex_polygons)
     service_gdf = pjutils.convert_to_gdf(service_at_level)
     service_dissolved = service_gdf.dissolve(
-        by=["common_tech", "brand_name", "max_advertised_download_speed", "max_advertised_upload_speed"]
+        by=[
+            "technology_name",
+            "common_tech",
+            "brand_name",
+            "max_advertised_download_speed",
+            "max_advertised_upload_speed",
+        ]
     )
     service_dissolved = categorize_service(service_dissolved.reset_index())
 
-    return service_dissolved.drop(columns=["OBJECTID", "hex_id", hex_id_field, "technology_name"])
+    return service_dissolved.drop(columns=["OBJECTID", "hex_id", hex_id_field])
 
 
 def classify_common_tech(service_data_df: pd.DataFrame) -> pd.DataFrame:
@@ -55,14 +61,12 @@ def classify_common_tech(service_data_df: pd.DataFrame) -> pd.DataFrame:
 
 def categorize_service(service_data_df):
     conditions = [
-        service_data_df["common_tech"] == "Cable",
-        service_data_df["common_tech"] == "DSL",
-        service_data_df["common_tech"] == "Fiber",
+        service_data_df["common_tech"].isin(["Cable", "DSL", "Fiber"]),
         service_data_df["common_tech"] == "Fixed Wireless",
         service_data_df["common_tech"] == "Satellite",
     ]
 
-    choices = ["wired", "wired", "wired", "wireless", "satellite"]
+    choices = ["wired", "wireless", "satellite"]
 
     service_data_df["category"] = np.select(conditions, choices, "Other Category")
 
