@@ -216,6 +216,12 @@ class Skid:
         self._remove_log_file_handlers(self.log_name, loggers)
 
     def _extract_bdc_data(self) -> pd.DataFrame:
+        """Download data from the FCC BDC API
+
+        Returns:
+            pd.DataFrame: All non-mobile service records for Utah with added h3, common_tech, and category columns
+        """
+
         base_url = "https://bdc.fcc.gov/api/public/map"
         base_headers = {
             # 'user-agent': "vscode-restclient",
@@ -261,6 +267,19 @@ class Skid:
     def _download_and_concat_provider_files(
         self, files_df: pd.DataFrame, session: requests.Session, base_url: str
     ) -> pd.DataFrame:
+        """Downloads and extracts technology files and concats into a single dataframe
+
+        Args:
+            files_df (pd.DataFrame): Holds the latest file_id and technology_code_desc data retrieved by an earlier API call to list the available files
+            session (requests.Session): The BDC API session
+            base_url (str): The base URL for the BDC API
+
+        Raises:
+            ValueError: If the download fails or the filename can't be extracted from the Content-Disposition header
+
+        Returns:
+            pd.DataFrame: All the availability records for Utah
+        """
         #: Download, extract, load to dataframe, and concat all the provider data for utah
 
         #: Extract the file name (w/o trailing .zip), which is in the Content-Disposition header as 'attachment; filename="filename.csv.zip"'
@@ -304,6 +323,18 @@ class Skid:
         service_type: Literal["layer", "table"],
         index: int,
     ) -> int:
+        """Update AGOL with a palletjack truncate and load
+
+        Args:
+            data (pd.DataFrame | gpd.GeoDataFrame): The spatial or tabular data to load
+            layer_itemid (str): AGOL itemid of the layer or table to update
+            service_type (Literal[&quot;layer&quot;, &quot;table&quot;]): Indicator for layer or table
+            index (int): The index of the layer or table in the AGOL item (note this is different from the feature service index)
+
+        Returns:
+            int: Number of records loaded
+        """
+
         loader = load.ServiceUpdater(self.gis, layer_itemid, service_type, index, self.tempdir_path)
         records_loaded = loader.truncate_and_load(data)
 
@@ -315,6 +346,19 @@ class Skid:
         layer_itemid: str,
         index: int,
     ) -> tuple[int, int]:
+        """Truncates and loads by manually deleting existing Object IDs and then adding new records.
+
+        Feature Service layers participating in a relationship cannot be truncated with the REST API, so we have to list all the OIDs, make a manual delete call with them, and then add the new records.
+
+        Args:
+            data (pd.DataFrame | gpd.GeoDataFrame): The spatial or tabular data to load
+            layer_itemid (str): AGOL itemid of the layer or table to update
+            index (int): The index of the layer or table in the AGOL item (note this is different from the feature service index)
+
+        Returns:
+            tuple[int, int]: Number of records deleted, added
+        """
+
         live_data = self.gis.content.get(layer_itemid).layers[index].query(where="1=1", out_fields="*").sdf
         oids = live_data["OBJECTID"].astype(int).tolist()
         loader = load.ServiceUpdater(self.gis, layer_itemid, "layer", index, self.tempdir_path)

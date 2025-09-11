@@ -37,6 +37,15 @@ def create_service_polygons_at_hex_level(
 
 
 def classify_common_tech(service_data_df: pd.DataFrame) -> pd.DataFrame:
+    """Create a commonly-used technology name based on the FCC technology_name field
+
+    Args:
+        service_data_df (pd.DataFrame): Contains FCC service availability records (must have technology_name field)
+
+    Returns:
+        pd.DataFrame: Input dataframe with an added common_tech field
+    """
+
     conditions = [
         service_data_df["technology_name"] == "Cable",
         service_data_df["technology_name"] == "Copper",
@@ -59,7 +68,16 @@ def classify_common_tech(service_data_df: pd.DataFrame) -> pd.DataFrame:
     return service_data_df
 
 
-def categorize_service(service_data_df):
+def categorize_service(service_data_df: pd.DataFrame) -> pd.DataFrame | gpd.GeoDataFrame:
+    """Categorize service records as either wired, wireless, or satellite based on common_tech field
+
+    Args:
+        service_data_df (pd.DataFrame): FCC service availability records with common_tech field added
+
+    Returns:
+        pd.DataFrame | gpd.GeoDataFrame: Input dataframe with an added category field
+    """
+
     conditions = [
         service_data_df["common_tech"].isin(["Cable", "DSL", "Fiber"]),
         service_data_df["common_tech"] == "Fixed Wireless",
@@ -74,10 +92,31 @@ def categorize_service(service_data_df):
 
 
 def h3_to_parent(h3_str: str, parent_level: int) -> str:
+    """Calculate the parent hex ID at a given level from a child hex ID
+
+    Args:
+        h3_str (str): Input H3 hex ID
+        parent_level (int): Desired parent level
+
+    Returns:
+        str: Parent hex ID at the desired level
+    """
+
     return h3.h3_to_string(h3.h3_to_parent(h3.string_to_h3(h3_str), parent_level))
 
 
 def service_by_hex_level(all_records: pd.DataFrame, hex_id_field: str, hexes_df: pd.DataFrame) -> pd.DataFrame:
+    """Groups residential service records by hex ID, technology, provider, and max up/down speeds
+
+    Args:
+        all_records (pd.DataFrame): All service records
+        hex_id_field (str): Index field for hex ID
+        hexes_df (pd.DataFrame): Spatially-enabled dataframe of the desired hex level to join the records to
+
+    Returns:
+        pd.DataFrame: Spatially-enabled dataframe of service records summarized by hex/tech/provider with max up/down speeds. Only hexes with service are included.
+    """
+
     #: Calc max up/down speeds per hex/tech/provider
     residential_only = all_records[all_records["business_residential_code"].isin(["R", "X"])]
     individual_records_down = residential_only.groupby([hex_id_field, "technology_name", "brand_name", "common_tech"])[
@@ -101,6 +140,17 @@ def service_by_hex_level(all_records: pd.DataFrame, hex_id_field: str, hexes_df:
 
 
 def max_service_by_hex_all_providers(service_records: pd.DataFrame) -> pd.DataFrame:
+    """Get a table of the max up/down speeds by hex/provider/tech for residential service records.
+
+    This allows a relationship with the hex geometry layer so a user can click on a hex and see max advertised speeds by provider/tech.
+
+    Args:
+        service_records (pd.DataFrame): All service records
+
+    Returns:
+        pd.DataFrame: Service records aggregated by hex/provider/tech with max up/down speeds
+    """
+
     res_only = service_records[service_records["business_residential_code"].isin(["R", "X"])]
 
     maxes = (
