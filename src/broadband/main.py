@@ -19,6 +19,7 @@ from typing import Literal
 
 import arcgis
 import geopandas as gpd
+import h3.api.numpy_int as h3
 import pandas as pd
 import requests
 from palletjack import load
@@ -136,6 +137,8 @@ class Skid:
                 except Exception:
                     pass
 
+    #:TODO: utah_service_data uses 5.2GB, with lots of string fields cast as object dtypes. Look at changing to string types and/or removing unnecessary fields.
+
     def process(self):
         """The main function that does all the work."""
 
@@ -153,14 +156,19 @@ class Skid:
         level_6_hexes = (
             self.gis.content.get(config.HEXES_LEVEL_6_ITEMID).layers[0].query(where="1=1", out_fields="hex_id").sdf
         )
+        level_6_hexes["hex_id"] = level_6_hexes["hex_id"].apply(lambda x: h3.string_to_h3(x)).astype("int64")
+
         self.skid_logger.debug("Loading hex level 7...")
         level_7_hexes = (
             self.gis.content.get(config.HEXES_LEVEL_7_ITEMID).layers[0].query(where="1=1", out_fields="hex_id").sdf
         )
+        level_7_hexes["hex_id"] = level_7_hexes["hex_id"].apply(lambda x: h3.string_to_h3(x)).astype("int64")
+
         self.skid_logger.debug("Loading hex level 8...")
         level_8_hexes = (
             self.gis.content.get(config.HEXES_LEVEL_8_ITEMID).layers[0].query(where="1=1", out_fields="hex_id").sdf
         )
+        level_8_hexes["hex_id"] = level_8_hexes["hex_id"].apply(lambda x: h3.string_to_h3(x)).astype("int64")
 
         self.skid_logger.info("Creating service polygons at hex levels 6, 7, and 8...")
         service_level_6 = utils.create_service_polygons_at_hex_level(utah_service_data, 6, level_6_hexes)
@@ -170,6 +178,9 @@ class Skid:
         self.skid_logger.info("Creating max service table and hexes...")
         max_service_table = utils.max_service_by_hex_all_providers(utah_service_data)
         max_service_hexes = level_8_hexes[level_8_hexes["hex_id"].isin(max_service_table["h3_res8_id"])]
+        #: switch h3 back to string to match AGOL services
+        max_service_hexes["hex_id"] = max_service_hexes["hex_id"].apply(lambda x: h3.h3_to_string(x))
+        max_service_table["h3_res8_id"] = max_service_table["h3_res8_id"].apply(lambda x: h3.h3_to_string(x))
 
         self.skid_logger.info("Updating AGOL...")
         service_level_6_count = self._update_agol(service_level_6, config.SERVICE_HEXES_6_ITEMID, "layer", 0)
@@ -252,17 +263,23 @@ class Skid:
 
         #: Use the file list to extract Utah provider data into a single dataframe
         all_data_df = self._download_and_concat_provider_files(utah_files, bdc_session, base_url)
+        # residential_data = all_data_df[all_data_df["business_residential_code"].isin(["R", "X"])]
+        residential_data = all_data_df
 
         #: Add h3, common tech, and category columns
         self.skid_logger.debug("Calculating H3 res 6...")
-        all_data_df["h3_res6_id"] = all_data_df.apply(lambda row: utils.h3_to_parent(row["h3_res8_id"], 6), axis=1)
+        residential_data["h3_res6_id"] = residential_data.apply(
+            lambda row: h3.h3_to_parent(row["h3_res8_id"], 6), axis=1
+        )
         self.skid_logger.debug("Calculating H3 res 7...")
-        all_data_df["h3_res7_id"] = all_data_df.apply(lambda row: utils.h3_to_parent(row["h3_res8_id"], 7), axis=1)
+        residential_data["h3_res7_id"] = residential_data.apply(
+            lambda row: h3.h3_to_parent(row["h3_res8_id"], 7), axis=1
+        )
 
-        all_data_df = utils.classify_common_tech(all_data_df)
-        all_data_df = utils.categorize_service(all_data_df)
+        residential_data = utils.classify_common_tech(residential_data)
+        residential_data = utils.categorize_service(residential_data)
 
-        return all_data_df
+        return residential_data
 
     def _download_and_concat_provider_files(
         self, files_df: pd.DataFrame, session: requests.Session, base_url: str
@@ -311,8 +328,25 @@ class Skid:
             with zipfile.ZipFile(BytesIO(download_response.content)) as zf:  #: pass the response as a BytesIO object
                 with zf.open(filename) as f:  #: Open the csv inside the zip archive
                     df = pd.read_csv(f)  #: Because f is a file-like object, we can read it like an on-disk file
+                    df = df[df["business_residential_code"].isin(["R", "X"])]  #: Keep only residential
                     df["technology_name"] = technology
-            all_df = pd.concat([all_df, df], ignore_index=True)
+                    df.drop(
+                        columns=[
+                            "frn",
+                            "provider_id",
+                            "location_id",
+                            "low_latency",
+                            "state_usps",
+                            "block_geoid",
+                            "business_residential_code",
+                        ],
+                        inplace=True,
+                    )
+                    df["brand_name"] = df["brand_name"].astype("category")
+                    df["technology_name"] = df["technology_name"].astype("category")
+                    self.skid_logger.debug("Converting h3_res8_id to int64...")
+                    df["h3_res8_id"] = df["h3_res8_id"].apply(lambda x: h3.string_to_h3(x)).astype("int64")
+            all_df = utils.concat_dataframes_with_categoricals([all_df, df], ignore_index=True)
 
         return all_df
 
