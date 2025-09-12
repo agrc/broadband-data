@@ -3,6 +3,7 @@ import h3.api.numpy_int as h3
 import numpy as np
 import pandas as pd
 from palletjack import utils as pjutils
+from pandas.api.types import CategoricalDtype, union_categoricals
 
 
 def create_service_polygons_at_hex_level(
@@ -63,7 +64,8 @@ def classify_common_tech(service_data_df: pd.DataFrame) -> pd.DataFrame:
         "Satellite",
     ]
 
-    service_data_df["common_tech"] = np.select(conditions, tech_choices, "Other Tech")
+    cat_type = CategoricalDtype(categories=tech_choices)
+    service_data_df["common_tech"] = pd.Series(np.select(conditions, tech_choices, "Other Tech"), dtype=cat_type)
 
     return service_data_df
 
@@ -86,7 +88,8 @@ def categorize_service(service_data_df: pd.DataFrame) -> pd.DataFrame | gpd.GeoD
 
     choices = ["wired", "wireless", "satellite"]
 
-    service_data_df["category"] = np.select(conditions, choices, "Other Category")
+    cat_type = CategoricalDtype(categories=choices)
+    service_data_df["category"] = pd.Series(np.select(conditions, choices, "Other Category"), dtype=cat_type)
 
     return service_data_df
 
@@ -118,13 +121,14 @@ def service_by_hex_level(all_records: pd.DataFrame, hex_id_field: str, hexes_df:
     """
 
     #: Calc max up/down speeds per hex/tech/provider
-    residential_only = all_records[all_records["business_residential_code"].isin(["R", "X"])]
-    individual_records_down = residential_only.groupby([hex_id_field, "technology_name", "brand_name", "common_tech"])[
-        "max_advertised_download_speed"
-    ].max()
-    individual_records_up = residential_only.groupby([hex_id_field, "technology_name", "brand_name", "common_tech"])[
-        "max_advertised_upload_speed"
-    ].max()
+    individual_records_down = all_records.groupby(
+        [hex_id_field, "technology_name", "brand_name", "common_tech"],
+        observed=True,
+    )["max_advertised_download_speed"].max()
+    individual_records_up = all_records.groupby(
+        [hex_id_field, "technology_name", "brand_name", "common_tech"],
+        observed=True,
+    )["max_advertised_upload_speed"].max()
     individual_records = pd.concat([individual_records_down, individual_records_up], axis=1).reset_index()
 
     #: Get the speeds as ints
@@ -151,10 +155,10 @@ def max_service_by_hex_all_providers(service_records: pd.DataFrame) -> pd.DataFr
         pd.DataFrame: Service records aggregated by hex/provider/tech with max up/down speeds
     """
 
-    res_only = service_records[service_records["business_residential_code"].isin(["R", "X"])]
+    # res_only = service_records[service_records["business_residential_code"].isin(["R", "X"])]
 
     maxes = (
-        res_only.groupby(["h3_res8_id", "brand_name", "common_tech", "category"])[
+        service_records.groupby(["h3_res8_id", "brand_name", "common_tech", "category"], observed=True)[
             ["max_advertised_download_speed", "max_advertised_upload_speed"]
         ]
         .agg("max")
@@ -179,3 +183,28 @@ def max_service_by_hex_all_providers(service_records: pd.DataFrame) -> pd.DataFr
     maxes["brand_name"] = maxes["brand_name"].replace({"Utah Telecommunication Open Infrastructure Agency": "UTOPIA"})
 
     return maxes
+
+
+def concat_dataframes_with_categoricals(dfs: list[pd.DataFrame], ignore_index: bool = False) -> pd.DataFrame:
+    """Concatenate dataframes while preserving categorical with different category values.
+
+    From https://stackoverflow.com/a/57809778
+
+    NB: We change the categories in-place for the input dataframes
+
+    Args:
+        dfs (list[pd.DataFrame]): List of dataframes to concatenate
+        ignore_index (bool, optional): Passed on to pd.concat. Defaults to False.
+
+    Returns:
+        pd.DataFrame: Concatenated dataframe with union of categories for categorical columns
+    """
+
+    # Iterate on categorical columns common to all dfs
+    for col in set.intersection(*[set(df.select_dtypes(include="category").columns) for df in dfs]):
+        # Generate the union category across dfs for this column
+        uc = union_categoricals([df[col] for df in dfs])
+        # Change to union category for all dataframes
+        for df in dfs:
+            df[col] = pd.Categorical(df[col].values, categories=uc.categories)
+    return pd.concat(dfs, ignore_index=ignore_index)
