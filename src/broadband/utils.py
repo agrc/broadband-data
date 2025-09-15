@@ -38,9 +38,9 @@ def create_service_polygons_at_hex_level(
             "max_advertised_download_speed",
             "max_advertised_upload_speed",
         ]
-    )
+    ).reset_index()
     module_logger.debug("categorize_service")
-    service_dissolved = categorize_service(service_dissolved.reset_index())
+    service_dissolved = categorize_service(service_dissolved)
 
     module_logger.debug("drop columns on return")
     return service_dissolved.drop(columns=["OBJECTID", "hex_id", hex_id_field])
