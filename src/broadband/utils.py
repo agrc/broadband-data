@@ -42,6 +42,7 @@ def create_service_polygons_at_hex_level(
     module_logger.debug("categorize_service")
     service_dissolved = categorize_service(service_dissolved.reset_index())
 
+    module_logger.debug("drop columns on return")
     return service_dissolved.drop(columns=["OBJECTID", "hex_id", hex_id_field])
 
 
@@ -55,6 +56,7 @@ def classify_common_tech(service_data_df: pd.DataFrame) -> pd.DataFrame:
         pd.DataFrame: Input dataframe with an added common_tech field
     """
 
+    module_logger.debug("classify conditions")
     conditions = [
         service_data_df["technology_name"] == "Cable",
         service_data_df["technology_name"] == "Copper",
@@ -73,6 +75,7 @@ def classify_common_tech(service_data_df: pd.DataFrame) -> pd.DataFrame:
     ]
 
     cat_type = CategoricalDtype(categories=tech_choices)
+    module_logger.debug("classify np.select")
     service_data_df["common_tech"] = pd.Series(np.select(conditions, tech_choices, "Other Tech"), dtype=cat_type)
 
     return service_data_df
