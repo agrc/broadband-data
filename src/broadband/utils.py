@@ -1,9 +1,13 @@
+import logging
+
 import geopandas as gpd
 import h3.api.numpy_int as h3
 import numpy as np
 import pandas as pd
 from palletjack import utils as pjutils
 from pandas.api.types import CategoricalDtype, union_categoricals
+
+module_logger = logging.getLogger("broadband-data.utils")
 
 
 def create_service_polygons_at_hex_level(
@@ -21,8 +25,11 @@ def create_service_polygons_at_hex_level(
     """
 
     hex_id_field = f"h3_res{hex_level}_id"
+    module_logger.debug("service_by_hex_level")
     service_at_level = service_by_hex_level(service_records, hex_id_field, hex_polygons)
+    module_logger.debug("convert to gdf")
     service_gdf = pjutils.convert_to_gdf(service_at_level)
+    module_logger.debug("dissolve")
     service_dissolved = service_gdf.dissolve(
         by=[
             "technology_name",
@@ -32,6 +39,7 @@ def create_service_polygons_at_hex_level(
             "max_advertised_upload_speed",
         ]
     )
+    module_logger.debug("categorize_service")
     service_dissolved = categorize_service(service_dissolved.reset_index())
 
     return service_dissolved.drop(columns=["OBJECTID", "hex_id", hex_id_field])
