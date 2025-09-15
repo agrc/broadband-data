@@ -78,7 +78,7 @@ runs:
         secrets_update_strategy: overwrite
         timeout: 3h
         flags: |
-          --memory=3Gi
+          --memory=4Gi
           --task-timeout=3h
           --max-retries=0
           --service-account=cloud-run-sa@${{ inputs.project_id }}.iam.gserviceaccount.com
