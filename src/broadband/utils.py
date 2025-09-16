@@ -221,3 +221,17 @@ def concat_dataframes_with_categoricals(dfs: list[pd.DataFrame], ignore_index: b
         for df in dfs:
             df[col] = pd.Categorical(df[col].values, categories=uc.categories)
     return pd.concat(dfs, ignore_index=ignore_index)
+
+
+def convert_categoricals_to_strings(df: pd.DataFrame) -> pd.DataFrame:
+    """Convert all categorical columns in a dataframe to strings.
+
+    Args:
+        df (pd.DataFrame): Input dataframe
+
+    Returns:
+        pd.DataFrame: Dataframe with categorical columns converted to strings
+    """
+    for col in df.select_dtypes(include="category").columns:
+        df[col] = df[col].astype("string")
+    return df

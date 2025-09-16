@@ -182,8 +182,10 @@ class Skid:
         max_service_hexes["hex_id"] = max_service_hexes["hex_id"].apply(lambda x: h3.h3_to_string(x))
         max_service_table["h3_res8_id"] = max_service_table["h3_res8_id"].apply(lambda x: h3.h3_to_string(x))
 
+        for dataframe in [service_level_6, service_level_7, service_level_8, max_service_table, max_service_hexes]:
+            dataframe = utils.convert_categoricals_to_strings(dataframe)
+
         self.skid_logger.info("Updating AGOL...")
-        self.skid_logger.debug(service_level_6.info())
         service_level_6_count = self._update_agol(service_level_6, config.SERVICE_HEXES_6_ITEMID, "layer", 0)
         service_level_7_count = self._update_agol(service_level_7, config.SERVICE_HEXES_7_ITEMID, "layer", 0)
         service_level_8_count = self._update_agol(service_level_8, config.SERVICE_HEXES_8_ITEMID, "layer", 0)
