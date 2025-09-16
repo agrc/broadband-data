@@ -23,6 +23,7 @@ import h3.api.numpy_int as h3
 import pandas as pd
 import requests
 from palletjack import load
+from palletjack import utils as pjutils
 from supervisor.message_handlers import SendGridHandler
 from supervisor.models import MessageDetails, Supervisor
 
@@ -373,7 +374,7 @@ class Skid:
         """
 
         loader = load.ServiceUpdater(self.gis, layer_itemid, service_type, index, self.tempdir_path)
-        records_loaded = loader.truncate_and_load(data)
+        records_loaded = pjutils.retry(loader.truncate_and_load, data)
 
         return records_loaded
 
@@ -400,7 +401,7 @@ class Skid:
         oids = live_data["OBJECTID"].astype(int).tolist()
         loader = load.ServiceUpdater(self.gis, layer_itemid, "layer", index, self.tempdir_path)
         records_deleted = loader.remove(oids)
-        records_loaded = loader.add(data)
+        records_loaded = pjutils.retry(loader.add, data)
 
         return records_deleted, records_loaded
 
