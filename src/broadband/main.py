@@ -112,7 +112,7 @@ class Skid:
         logging.captureWarnings(True)
 
         skid_logger.debug("Creating Supervisor object")
-        self.supervisor = Supervisor(handle_errors=True, logger=self.skid_logger, log_path=self.log_path)
+        self.supervisor = Supervisor(handle_errors=True, logger=skid_logger, log_path=self.log_path)
         sendgrid_settings = config.SENDGRID_SETTINGS
         sendgrid_settings["api_key"] = self.secrets.SENDGRID_API_KEY
         self.supervisor.add_message_handler(
