@@ -38,7 +38,8 @@ def create_service_polygons_at_hex_level(
             "max_advertised_download_speed",
             "max_advertised_upload_speed",
         ]
-    ).reset_index()
+    )
+    service_dissolved.reset_index(inplace=True)
     module_logger.debug("categorize_service")
     service_dissolved = categorize_service(service_dissolved)
 
