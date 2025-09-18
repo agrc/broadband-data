@@ -138,8 +138,6 @@ class Skid:
                 except Exception:
                     pass
 
-    #:TODO: utah_service_data uses 5.2GB, with lots of string fields cast as object dtypes. Look at changing to string types and/or removing unnecessary fields.
-
     def process(self):
         """The main function that does all the work."""
 
@@ -236,7 +234,6 @@ class Skid:
 
         base_url = "https://bdc.fcc.gov/api/public/map"
         base_headers = {
-            # 'user-agent': "vscode-restclient",
             "username": self.secrets.BDC_USERNAME,
             "hash_value": self.secrets.BDC_HASH,
         }
