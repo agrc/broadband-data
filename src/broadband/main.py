@@ -154,22 +154,19 @@ class Skid:
 
         self.skid_logger.info("Loading hexes from AGOL...")
         self.skid_logger.debug("Loading hex level 6...")
-        level_6_hexes = (
-            self.gis.content.get(config.HEXES_LEVEL_6_ITEMID).layers[0].query(where="1=1", out_fields="hex_id").sdf
+        level_6_hexes = utils.load_layer_from_opensgid(
+            self.secrets.SGID_USER, self.secrets.SGID_PASSWORD, config.HEXES_LEVEL_6_LAYER
         )
-        level_6_hexes["hex_id"] = level_6_hexes["hex_id"].apply(lambda x: h3.string_to_h3(x)).astype("int64")
 
         self.skid_logger.debug("Loading hex level 7...")
-        level_7_hexes = (
-            self.gis.content.get(config.HEXES_LEVEL_7_ITEMID).layers[0].query(where="1=1", out_fields="hex_id").sdf
+        level_7_hexes = utils.load_layer_from_opensgid(
+            self.secrets.SGID_USER, self.secrets.SGID_PASSWORD, config.HEXES_LEVEL_7_LAYER
         )
-        level_7_hexes["hex_id"] = level_7_hexes["hex_id"].apply(lambda x: h3.string_to_h3(x)).astype("int64")
 
         self.skid_logger.debug("Loading hex level 8...")
-        level_8_hexes = (
-            self.gis.content.get(config.HEXES_LEVEL_8_ITEMID).layers[0].query(where="1=1", out_fields="hex_id").sdf
+        level_8_hexes = utils.load_layer_from_opensgid(
+            self.secrets.SGID_USER, self.secrets.SGID_PASSWORD, config.HEXES_LEVEL_8_LAYER
         )
-        level_8_hexes["hex_id"] = level_8_hexes["hex_id"].apply(lambda x: h3.string_to_h3(x)).astype("int64")
 
         self.skid_logger.info("Creating service polygons at hex levels 6, 7, and 8...")
         service_level_6 = utils.create_service_polygons_at_hex_level(utah_service_data, 6, level_6_hexes)
@@ -267,23 +264,17 @@ class Skid:
 
         #: Use the file list to extract Utah provider data into a single dataframe
         all_data_df = self._download_and_concat_provider_files(utah_files, bdc_session, base_url)
-        # residential_data = all_data_df[all_data_df["business_residential_code"].isin(["R", "X"])]
-        residential_data = all_data_df
 
         #: Add h3, common tech, and category columns
         self.skid_logger.debug("Calculating H3 res 6...")
-        residential_data["h3_res6_id"] = residential_data.apply(
-            lambda row: h3.h3_to_parent(row["h3_res8_id"], 6), axis=1
-        )
+        all_data_df["h3_res6_id"] = all_data_df.apply(lambda row: h3.h3_to_parent(row["h3_res8_id"], 6), axis=1)
         self.skid_logger.debug("Calculating H3 res 7...")
-        residential_data["h3_res7_id"] = residential_data.apply(
-            lambda row: h3.h3_to_parent(row["h3_res8_id"], 7), axis=1
-        )
+        all_data_df["h3_res7_id"] = all_data_df.apply(lambda row: h3.h3_to_parent(row["h3_res8_id"], 7), axis=1)
 
-        residential_data = utils.classify_common_tech(residential_data)
-        residential_data = utils.categorize_service(residential_data)
+        all_data_df = utils.classify_common_tech(all_data_df)
+        all_data_df = utils.categorize_service(all_data_df)
 
-        return residential_data
+        return all_data_df
 
     def _download_and_concat_provider_files(
         self, files_df: pd.DataFrame, session: requests.Session, base_url: str
@@ -398,9 +389,11 @@ class Skid:
         """
 
         live_data = self.gis.content.get(layer_itemid).layers[index].query(where="1=1", out_fields="*").sdf
-        oids = live_data["OBJECTID"].astype(int).tolist()
         loader = load.ServiceUpdater(self.gis, layer_itemid, "layer", index, self.tempdir_path)
-        records_deleted = loader.remove(oids)
+        records_deleted = 0
+        if not live_data.empty:
+            oids = live_data["OBJECTID"].astype(int).tolist()
+            records_deleted = loader.remove(oids)
         records_loaded = pjutils.retry(loader.add, data)
 
         return records_deleted, records_loaded
