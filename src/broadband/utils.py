@@ -4,14 +4,14 @@ import geopandas as gpd
 import h3.api.numpy_int as h3
 import numpy as np
 import pandas as pd
-from palletjack import utils as pjutils
 from pandas.api.types import CategoricalDtype, union_categoricals
+from sqlalchemy import create_engine
 
 module_logger = logging.getLogger("broadband-data.utils")
 
 
 def create_service_polygons_at_hex_level(
-    service_records: pd.DataFrame, hex_level: int, hex_polygons: pd.DataFrame
+    service_records: pd.DataFrame, hex_level: int, hex_polygons: gpd.GeoDataFrame
 ) -> gpd.GeoDataFrame:
     """Creates polygons representing service by provider, speeds, and technology at a given H3 hex level.
 
@@ -25,8 +25,7 @@ def create_service_polygons_at_hex_level(
     """
 
     hex_id_field = f"h3_res{hex_level}_id"
-    service_at_level = service_by_hex_level(service_records, hex_id_field, hex_polygons)
-    service_gdf = pjutils.convert_to_gdf(service_at_level)
+    service_gdf = service_by_hex_level(service_records, hex_id_field, hex_polygons)
     service_dissolved = service_gdf.dissolve(
         by=[
             "technology_name",
@@ -40,7 +39,7 @@ def create_service_polygons_at_hex_level(
     service_dissolved.reset_index(inplace=True)
     service_dissolved = categorize_service(service_dissolved)
 
-    return service_dissolved.drop(columns=["OBJECTID", "hex_id", hex_id_field])
+    return service_dissolved.drop(columns=["hex_id", hex_id_field])
 
 
 def classify_common_tech(service_data_df: pd.DataFrame) -> pd.DataFrame:
@@ -114,16 +113,16 @@ def h3_to_parent(h3_str: str, parent_level: int) -> str:
     return h3.h3_to_string(h3.h3_to_parent(h3.string_to_h3(h3_str), parent_level))
 
 
-def service_by_hex_level(all_records: pd.DataFrame, hex_id_field: str, hexes_df: pd.DataFrame) -> pd.DataFrame:
+def service_by_hex_level(all_records: pd.DataFrame, hex_id_field: str, hexes_df: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """Groups residential service records by hex ID, technology, provider, and max up/down speeds
 
     Args:
         all_records (pd.DataFrame): All service records
         hex_id_field (str): Index field for hex ID
-        hexes_df (pd.DataFrame): Spatially-enabled dataframe of the desired hex level to join the records to
+        hexes_df (gpd.GeoDataFrame): GeoDataframe of the desired hex level to join the records to
 
     Returns:
-        pd.DataFrame: Spatially-enabled dataframe of service records summarized by hex/tech/provider with max up/down speeds. Only hexes with service are included.
+        gpd.GeoDataFrame: GeoDataframe of service records summarized by hex/tech/provider with max up/down speeds. Only hexes with service are included.
     """
 
     #: Calc max up/down speeds per hex/tech/provider
@@ -160,8 +159,6 @@ def max_service_by_hex_all_providers(service_records: pd.DataFrame) -> pd.DataFr
     Returns:
         pd.DataFrame: Service records aggregated by hex/provider/tech with max up/down speeds
     """
-
-    # res_only = service_records[service_records["business_residential_code"].isin(["R", "X"])]
 
     maxes = (
         service_records.groupby(["h3_res8_id", "brand_name", "common_tech", "category"], observed=True)[
@@ -228,3 +225,26 @@ def convert_categoricals_to_strings(df: pd.DataFrame) -> pd.DataFrame:
     for col in df.select_dtypes(include="category").columns:
         df[col] = df[col].astype("string")
     return df
+
+
+def load_layer_from_opensgid(sgid_user: str, sgid_password: str, layer_name: str) -> gpd.GeoDataFrame:
+    """Load in a layer from OpenSGID, rename geometry column to SHAPE, convert hex_id to int64, drop xid column
+
+    Args:
+        sgid_user (str): OpenSGID username
+        sgid_password (str): OpenSGID password
+        layer_name (str): schema.layername
+
+    Returns:
+        gpd.GeoDataFrame: OpenSGID layer ready for AGOL
+    """
+
+    db_connection_url = f"postgresql://{sgid_user}:{sgid_password}@opensgid.agrc.utah.gov:5432/opensgid"
+    with create_engine(db_connection_url).connect() as connection:
+        gdf = gpd.read_postgis(f"SELECT * FROM {layer_name}", connection, geom_col="shape")
+
+    gdf.rename(columns={"shape": "SHAPE"}, inplace=True)
+    gdf.set_geometry("SHAPE", inplace=True)
+    gdf["hex_id"] = gdf["hex_id"].apply(lambda x: h3.string_to_h3(x)).astype("int64")
+    gdf.drop(columns=["xid"], inplace=True)
+    return gdf
