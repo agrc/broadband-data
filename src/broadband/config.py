@@ -10,10 +10,10 @@ SKID_NAME = "broadband-data"
 AGOL_ORG = "https://utahbroadbandctr.maps.arcgis.com"
 SENDGRID_SETTINGS = {  #: Settings for SendGridHandler
     "from_address": "noreply@utah.gov",
-    "to_addresses": "jdadams@utah.gov",
+    "to_addresses": "ugrc-developers@utah.gov",
     "prefix": f"{SKID_NAME} on {socket.gethostname()}: ",
 }
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 LOG_FILE_NAME = "log"
 
 #: Hexes from OpenSGID
