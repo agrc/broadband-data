@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/agrc/broadband-data/compare/v1.0.0...v1.0.1) (2025-09-19)
+
+
+### Bug Fixes
+
+* status email addr, log level ([a8f7721](https://github.com/agrc/broadband-data/commit/a8f77216c9981a94e1a1a101d43aaf3939116b1b))
+
 ## 1.0.0 (2025-09-19)
 
 
