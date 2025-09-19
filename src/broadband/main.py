@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # * coding: utf8 *
 """
-Run the broadband-data skid as a cloud function.
+Run the broadband-data skid as a cloud run job.
 """
 
 import json
@@ -141,7 +141,6 @@ class Skid:
     def process(self):
         """The main function that does all the work."""
 
-        #: Set up secrets, tempdir, supervisor, and logging
         start = datetime.now()
 
         #: Get our GIS object via the ArcGIS API for Python
