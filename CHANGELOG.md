@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.0.0 (2025-09-19)
+
+
+### Features
+
+* first-pass reproduction of notebook ([78ea033](https://github.com/agrc/broadband-data/commit/78ea0334fd00551d3ac95dc51051684ecabd27d0))
+* working updates for all layers; sessionize bdc calls ([78b4aec](https://github.com/agrc/broadband-data/commit/78b4aec6df32543534d241fa0015465ce9df664d))
+
+
+### Bug Fixes
+
+* memory savings via categories and h3 ints ([bd97429](https://github.com/agrc/broadband-data/commit/bd974296469d4fa77db37c90e50ed6b963107686))
+
+
+### Dependencies
+
+* don't need functions-framework ([c13e89e](https://github.com/agrc/broadband-data/commit/c13e89e1f835db8bf26a2ad582ce74e7fc103607))
+
+
+### Documentation
+
+* docstrings ([bbc6606](https://github.com/agrc/broadband-data/commit/bbc6606474b0f8b35155255d63dfff9d80332232))
+
 ## 1.0.0 (2025-07-30)
 
 
