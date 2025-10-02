@@ -240,6 +240,8 @@ class Skid:
         bdc_session = requests.Session()
         bdc_session.headers.update(base_headers)
 
+        self.skid_logger.debug(bdc_session.headers)
+
         #: Get the list of available dates
         dates_response = bdc_session.get(f"{base_url}/listAsOfDates")
         try:
