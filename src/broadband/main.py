@@ -242,7 +242,12 @@ class Skid:
 
         #: Get the list of available dates
         dates_response = bdc_session.get(f"{base_url}/listAsOfDates")
-        response_list = dates_response.json()["data"]
+        try:
+            response_list = dates_response.json()["data"]
+        except (KeyError, json.JSONDecodeError) as e:
+            raise ValueError(
+                f"Failed to get available dates: {dates_response.status_code} - {dates_response.text}"
+            ) from e
         available_dates = [entry["as_of_date"] for entry in response_list if entry["data_type"] == "availability"]
         available_dates.sort(reverse=True)
 
