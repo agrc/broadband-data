@@ -235,6 +235,7 @@ class Skid:
         base_headers = {
             "username": self.secrets.BDC_USERNAME,
             "hash_value": self.secrets.BDC_HASH,
+            "User-Agent": f"{config.SKID_NAME}/{version.__version__}",
         }
 
         bdc_session = requests.Session()
