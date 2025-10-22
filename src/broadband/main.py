@@ -180,6 +180,9 @@ class Skid:
         for dataframe in [service_level_6, service_level_7, service_level_8, max_service_table, max_service_hexes]:
             dataframe = utils.convert_categoricals_to_strings(dataframe)
 
+        for geodataframe in [service_level_6, service_level_7, service_level_8, max_service_hexes]:
+            geodataframe.to_crs(epsg=3857, inplace=True)
+
         self.skid_logger.info("Updating AGOL...")
         service_level_6_count = self._update_agol(service_level_6, config.SERVICE_HEXES_6_ITEMID, "layer", 0)
         service_level_7_count = self._update_agol(service_level_7, config.SERVICE_HEXES_7_ITEMID, "layer", 0)
@@ -262,6 +265,7 @@ class Skid:
         all_data_df = self._download_and_concat_provider_files(utah_files, bdc_session, base_url)
 
         #: Add h3, common tech, and category columns
+        self.skid_logger.info("Calculating H3, setting techs...")
         self.skid_logger.debug("Calculating H3 res 6...")
         all_data_df["h3_res6_id"] = all_data_df.apply(lambda row: h3.h3_to_parent(row["h3_res8_id"], 6), axis=1)
         self.skid_logger.debug("Calculating H3 res 7...")
