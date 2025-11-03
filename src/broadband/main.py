@@ -147,7 +147,7 @@ class Skid:
         self.gis = arcgis.GIS(config.AGOL_ORG, self.secrets.AGOL_USER, self.secrets.AGOL_PASSWORD)
 
         self.skid_logger.info("Extracting BDC data...")
-        utah_service_data = self._extract_bdc_data()
+        utah_service_data = pjutils.retry(self._extract_bdc_data)
 
         self.skid_logger.info("Loading hexes from AGOL...")
         self.skid_logger.debug("Loading hex level 6...")
