@@ -174,8 +174,8 @@ class Skid:
         max_service_table = utils.max_service_by_hex_all_providers(utah_service_data)
         max_service_hexes = level_8_hexes[level_8_hexes["hex_id"].isin(max_service_table["h3_res8_id"])]
         #: switch h3 back to string to match AGOL services
-        max_service_hexes["hex_id"] = max_service_hexes["hex_id"].apply(lambda x: h3.h3_to_string(x))
-        max_service_table["h3_res8_id"] = max_service_table["h3_res8_id"].apply(lambda x: h3.h3_to_string(x))
+        max_service_hexes["hex_id"] = max_service_hexes["hex_id"].apply(lambda x: h3.int_to_str(x))
+        max_service_table["h3_res8_id"] = max_service_table["h3_res8_id"].apply(lambda x: h3.int_to_str(x))
 
         for dataframe in [service_level_6, service_level_7, service_level_8, max_service_table, max_service_hexes]:
             dataframe = utils.convert_categoricals_to_strings(dataframe)
@@ -267,9 +267,9 @@ class Skid:
         #: Add h3, common tech, and category columns
         self.skid_logger.info("Calculating H3, setting techs...")
         self.skid_logger.debug("Calculating H3 res 6...")
-        all_data_df["h3_res6_id"] = all_data_df.apply(lambda row: h3.h3_to_parent(row["h3_res8_id"], 6), axis=1)
+        all_data_df["h3_res6_id"] = all_data_df.apply(lambda row: h3.cell_to_parent(row["h3_res8_id"], 6), axis=1)
         self.skid_logger.debug("Calculating H3 res 7...")
-        all_data_df["h3_res7_id"] = all_data_df.apply(lambda row: h3.h3_to_parent(row["h3_res8_id"], 7), axis=1)
+        all_data_df["h3_res7_id"] = all_data_df.apply(lambda row: h3.cell_to_parent(row["h3_res8_id"], 7), axis=1)
 
         all_data_df = utils.classify_common_tech(all_data_df)
         all_data_df = utils.categorize_service(all_data_df)
@@ -340,7 +340,7 @@ class Skid:
                     df["brand_name"] = df["brand_name"].astype("category")
                     df["technology_name"] = df["technology_name"].astype("category")
                     self.skid_logger.debug("Converting h3_res8_id to int64...")
-                    df["h3_res8_id"] = df["h3_res8_id"].apply(lambda x: h3.string_to_h3(x)).astype("int64")
+                    df["h3_res8_id"] = df["h3_res8_id"].apply(lambda x: h3.str_to_int(x)).astype("int64")
             all_df = utils.concat_dataframes_with_categoricals([all_df, df], ignore_index=True)
 
         return all_df
