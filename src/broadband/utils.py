@@ -110,7 +110,7 @@ def h3_to_parent(h3_str: str, parent_level: int) -> str:
         str: Parent hex ID at the desired level
     """
 
-    return h3.h3_to_string(h3.h3_to_parent(h3.string_to_h3(h3_str), parent_level))
+    return h3.int_to_str(h3.cell_to_parent(h3.str_to_int(h3_str), parent_level))
 
 
 def service_by_hex_level(all_records: pd.DataFrame, hex_id_field: str, hexes_df: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -245,6 +245,6 @@ def load_layer_from_opensgid(sgid_user: str, sgid_password: str, layer_name: str
 
     gdf.rename(columns={"shape": "SHAPE"}, inplace=True)
     gdf.set_geometry("SHAPE", inplace=True)
-    gdf["hex_id"] = gdf["hex_id"].apply(lambda x: h3.string_to_h3(x)).astype("int64")
+    gdf["hex_id"] = gdf["hex_id"].apply(lambda x: h3.str_to_int(x)).astype("int64")
     gdf.drop(columns=["xid"], inplace=True)
     return gdf
