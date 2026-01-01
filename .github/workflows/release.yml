@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: ⬇️ Set up code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: 🚀 Deploy
         uses: ./.github/actions/deploy
