@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.0.3](https://github.com/agrc/broadband-data/compare/v1.0.2...v1.0.3) (2026-01-29)
+
+
+### Dependencies
+
+* **dev:** update pytest requirement from &lt;9,&gt;=7 to &gt;=7,&lt;10 ([c123deb](https://github.com/agrc/broadband-data/commit/c123deb3e97c3025a4ca388ea2806cbf5b1da555))
+* missed some api changes, dbot frequency ([a59e406](https://github.com/agrc/broadband-data/commit/a59e40676c7e7c8d64d7231632c20e8257ad1aa2))
+* update h3 to 4.x ([fd4471c](https://github.com/agrc/broadband-data/commit/fd4471c4a82cd79fee7bb8a4ba40bc8eabfc57b2))
+
 ## [1.0.2](https://github.com/agrc/broadband-data/compare/v1.0.1...v1.0.2) (2025-11-04)
 
 
