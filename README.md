@@ -106,3 +106,7 @@ Skids use GCP Secrets Manager to make secrets available to the function. They ar
 The `secrets.json` folder holds all the login info, etc. A template is available in the repo's root directory. This is read into a dictionary with the `json` package via the `_get_secrets()` function. Other files (`known_hosts`, service account keys) can be handled in a similar manner or just have their path available for direct access.
 
 A separate `config.py` module holds non-secret configuration values. These are accessed by importing the module and accessing them directly.
+
+## Attribution
+
+This project was developed with the assistance of [GitHub Copilot](https://github.com/features/copilot).
