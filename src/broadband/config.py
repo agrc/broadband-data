@@ -13,7 +13,7 @@ try:
     req = urllib.request.Request(url)
     req.add_header("Metadata-Flavor", "Google")
     with urllib.request.urlopen(req, timeout=15) as response:
-        project_id = response.read().decode()
+        project_id = response.read().decode().strip()
         if not project_id:
             raise ValueError
         HOST_NAME = project_id
