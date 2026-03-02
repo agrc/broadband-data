@@ -202,7 +202,7 @@ class Skid:
         end = datetime.now()
 
         summary_message = MessageDetails()
-        summary_message.subject = f"{config.SKID_NAME} Update Summary"
+        summary_message.subject = "Update Summary"
         summary_rows = [
             f"{config.SKID_NAME} update {start.strftime('%Y-%m-%d')}",
             "=" * 20,
