@@ -80,7 +80,7 @@ runs:
         flags: |
           --memory=4Gi
           --task-timeout=3h
-          --max-retries=0
+          --max-retries=3
           --service-account=cloud-run-sa@${{ inputs.project_id }}.iam.gserviceaccount.com
 
     - name: 🕰️ Create Cloud Scheduler
