@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.4](https://github.com/agrc/broadband-data/compare/v1.0.3...v1.0.4) (2026-04-08)
+
+
+### Bug Fixes
+
+* add gcp retries for agol hangs/out-of-memory weirdness ([1189fcb](https://github.com/agrc/broadband-data/commit/1189fcbf8df67396fcf5afb7c3ac0207b45a8cf2))
+* include gcp env in status email ([41f8bab](https://github.com/agrc/broadband-data/commit/41f8babff8f225c41699546fa2c1a09659b282e3))
+
 ## [1.0.3](https://github.com/agrc/broadband-data/compare/v1.0.2...v1.0.3) (2026-01-29)
 
 
