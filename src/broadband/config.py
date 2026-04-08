@@ -27,7 +27,7 @@ SENDGRID_SETTINGS = {  #: Settings for SendGridHandler
     "to_addresses": "ugrc-developers@utah.gov",
     "prefix": f"{SKID_NAME} on {HOST_NAME}: ",
 }
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
 LOG_FILE_NAME = "log"
 
 #: Hexes from OpenSGID
