@@ -259,7 +259,9 @@ class Skid:
             params=params,
         )
         available_files_df = pd.DataFrame.from_records(download_list_response.json()["data"])
-        utah_files = available_files_df[(available_files_df["state_name"] == "Utah")]
+        utah_files = available_files_df[
+            (available_files_df["state_name"] == "Utah") & (available_files_df["subcategory"] == "Location Coverage")
+        ]
 
         #: Use the file list to extract Utah provider data into a single dataframe
         all_data_df = self._download_and_concat_provider_files(utah_files, bdc_session, base_url)
