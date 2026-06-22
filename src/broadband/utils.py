@@ -183,7 +183,9 @@ def max_service_by_hex_all_providers(service_records: pd.DataFrame) -> pd.DataFr
         inplace=True,
         errors="ignore",
     )
-    maxes["brand_name"] = maxes["brand_name"].replace({"Utah Telecommunication Open Infrastructure Agency": "UTOPIA"})
+    maxes["brand_name"] = maxes["brand_name"].cat.rename_categories(
+        {"Utah Telecommunication Open Infrastructure Agency": "UTOPIA"}
+    )
 
     return maxes
 
