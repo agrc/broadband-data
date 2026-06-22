@@ -3,6 +3,24 @@ import pandas as pd
 from broadband import utils
 
 
+class TestMaxServiceByHexAllProviders:
+    def test_renames_utopia_provider_for_categorical_brand_names(self):
+        service_records = pd.DataFrame(
+            {
+                "h3_res8_id": [1],
+                "brand_name": pd.Categorical(["Utah Telecommunication Open Infrastructure Agency"]),
+                "common_tech": pd.Categorical(["Fiber"]),
+                "category": pd.Categorical(["wired"]),
+                "max_advertised_download_speed": [1000],
+                "max_advertised_upload_speed": [1000],
+            }
+        )
+
+        result = utils.max_service_by_hex_all_providers(service_records)
+
+        assert result.loc[0, "brand_name"] == "UTOPIA"
+
+
 class TestConcatCategorical:
     def test_concat_dataframes_with_categoricals_gets_union_of_categories(self):
         df_a = pd.DataFrame(
