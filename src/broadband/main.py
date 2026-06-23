@@ -39,7 +39,8 @@ except ImportError:
 
 class Skid:
     def __init__(self):
-        self.secrets = SimpleNamespace(**self._get_secrets())
+        secrets, self.is_local_dev = self._get_secrets()
+        self.secrets = SimpleNamespace(**secrets)
         self.tempdir = TemporaryDirectory(ignore_cleanup_errors=True)
         self.tempdir_path = Path(self.tempdir.name)
         self.log_name = f"{config.LOG_FILE_NAME}_{datetime.now().strftime('%Y%m%d-%H%M%S')}.txt"
@@ -58,19 +59,19 @@ class Skid:
             FileNotFoundError: If the secrets file can't be found.
 
         Returns:
-            dict: The secrets .json loaded as a dictionary
+            tuple[dict, bool]: The secrets .json loaded as a dictionary and whether they came from local development
         """
 
         secret_folder = Path("/secrets")
 
         #: Try to get the secrets from the Cloud Function mount point
         if secret_folder.exists():
-            return json.loads(Path("/secrets/app/secrets.json").read_text(encoding="utf-8"))
+            return json.loads(Path("/secrets/app/secrets.json").read_text(encoding="utf-8")), False
 
         #: Otherwise, try to load a local copy for local development
         secret_folder = Path(__file__).parent / "secrets"
         if secret_folder.exists():
-            return json.loads((secret_folder / "secrets.json").read_text(encoding="utf-8"))
+            return json.loads((secret_folder / "secrets.json").read_text(encoding="utf-8")), True
 
         raise FileNotFoundError("Secrets folder not found; secrets not loaded.")
 
@@ -113,6 +114,9 @@ class Skid:
 
         skid_logger.debug("Creating Supervisor object")
         self.supervisor = Supervisor(handle_errors=True, logger=skid_logger, log_path=self.log_path)
+        if self.is_local_dev:
+            return
+
         sendgrid_settings = config.SENDGRID_SETTINGS
         sendgrid_settings["api_key"] = self.secrets.SENDGRID_API_KEY
         self.supervisor.add_message_handler(
