@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.6](https://github.com/agrc/broadband-data/compare/v1.0.5...v1.0.6) (2026-06-24)
+
+
+### Bug Fixes
+
+* increase memory ([c9b6b85](https://github.com/agrc/broadband-data/commit/c9b6b853c3c40142defbc9733d9b49d4d41f90de))
+
 ## [1.0.5](https://github.com/agrc/broadband-data/compare/v1.0.4...v1.0.5) (2026-06-24)
 
 
