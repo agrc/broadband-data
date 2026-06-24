@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.0.5](https://github.com/agrc/broadband-data/compare/v1.0.4...v1.0.5) (2026-06-24)
+
+
+### Bug Fixes
+
+* exclude new dataset published by FCC ([639b3f0](https://github.com/agrc/broadband-data/commit/639b3f064752a8e462871cb70083219c44b3673b)), closes [#22](https://github.com/agrc/broadband-data/issues/22)
+* use category renaming ([0e21d45](https://github.com/agrc/broadband-data/commit/0e21d450a7d83a8b4e4ce41b212ae00a33de70f7))
+
+
+### Dependencies
+
+* bump palletjack ([a046608](https://github.com/agrc/broadband-data/commit/a046608b75be67b25a13c5e3cedd4217ca8a5d2b))
+
+
+### Documentation
+
+* readme ([4f09a99](https://github.com/agrc/broadband-data/commit/4f09a9917a9d4d344de155d91579ca340560c44e))
+
 ## [1.0.4](https://github.com/agrc/broadband-data/compare/v1.0.3...v1.0.4) (2026-04-08)
 
 
